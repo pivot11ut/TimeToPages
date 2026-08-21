@@ -1,0 +1,165 @@
+:root {
+  --font-serif: 'Cinzel', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  /* Color Palette - Celestial & Gold */
+  --bg-primary: #080A10;
+  --bg-surface: rgba(16, 22, 36, 0.75);
+  --bg-surface-hover: rgba(26, 35, 58, 0.85);
+  --bg-card: rgba(22, 30, 48, 0.6);
+  --border-gold: rgba(212, 175, 55, 0.35);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --accent-gold: #F3CA68;
+  --accent-gold-light: #FFE29A;
+  --accent-gold-dark: #C49826;
+  --accent-gold-glow: rgba(243, 202, 104, 0.25);
+  
+  --text-main: #F1F5F9;
+  --text-muted: #94A3B8;
+  --text-gold: #F3CA68;
+
+  /* Scripture Volume Colors */
+  --vol-ot: #3B82F6;       /* Old Testament - Azure */
+  --vol-nt: #6366F1;       /* New Testament - Indigo */
+  --vol-bom: #EAB308;      /* Book of Mormon - Sacred Gold */
+  --vol-dc: #10B981;       /* Doctrine & Covenants - Emerald */
+  --vol-pgp: #EC4899;      /* Pearl of Great Price - Rose Amethyst */
+  
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 25%, rgba(234, 179, 8, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 50% 0%, rgba(243, 202, 104, 0.12) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(8, 10, 16, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(243, 202, 104, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-gold);
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: var(--radius-lg);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: var(--transition-smooth);
+}
+
+.glass-card:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(243, 202, 104, 0.15);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #FFF5D0 0%, #F3CA68 50%, #C49826 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: var(--font-serif);
+}
+
+.gold-glow-button {
+  background: linear-gradient(135deg, #F3CA68 0%, #C49826 100%);
+  color: #080A10;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 1.25rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 14px 0 var(--accent-gold-glow);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gold-glow-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(243, 202, 104, 0.4);
+  background: linear-gradient(135deg, #FFE29A 0%, #D4AF37 100%);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.badge-ot { background: rgba(59, 130, 246, 0.15); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.3); }
+.badge-nt { background: rgba(99, 102, 241, 0.15); color: #A5B4FC; border: 1px solid rgba(99, 102, 241, 0.3); }
+.badge-bom { background: rgba(234, 179, 8, 0.15); color: #FDE047; border: 1px solid rgba(234, 179, 8, 0.3); }
+.badge-dc { background: rgba(16, 185, 129, 0.15); color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-pgp { background: rgba(236, 72, 153, 0.15); color: #F9A8D4; border: 1px solid rgba(236, 72, 153, 0.3); }
+
+/* Animation Keyframes */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.02); }
+}
+
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: floatAnim 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
