@@ -1,6 +1,7 @@
 # TimeToPages - Technical Design Document
 
 **Application Name**: TimeToPages  
+**Live Website**: [https://gunnvault.com](https://gunnvault.com)  
 **Target Platform**: Web (SPA) & Standalone Desktop Application (macOS / Windows)  
 **Target Audience**: Scripture readers, LDS scholars, teachers, and time-scripture correlation enthusiasts  
 **Author / Core Maintainer**: Antigravity AI & Tim Gunn  
@@ -16,10 +17,12 @@
 - **Doctrine and Covenants**
 - **Pearl of Great Price**
 
-The application solves two main correlation challenges:
-1. **Page Number Correlation**: Resolving numbers like `215` directly to standard LDS print edition pages (e.g., Book of Mormon Page 215 = Alma 14–15; LDS Bible Page 215 = Numbers 33–35; D&C Page 215 = Section 107).
-2. **Chapter & Verse Correlation**: Mapping time formats like `2:15` or `21:5` to matching chapter and verse references (e.g., 1 Nephi 2:15: *"And my father dwelt in a tent."*, Genesis 2:15, Matthew 2:15, Moses 2:15).
-3. **Scripture Wall Clock**: An ambient live visualizer that automatically updates scriptures in real-time every minute as the clock ticks.
+The application provides:
+1. **Time-to-Page Correlation**: Resolving numbers like `215` directly to standard LDS print edition pages (e.g., Book of Mormon Page 215 = Alma 14–15; LDS Bible Page 215 = Numbers 33–35; D&C Page 215 = Section 107).
+2. **Doctrine & Covenants Default Display**: By default, the application displays page matches alongside **Doctrine & Covenants** chapter & verse matches, keeping the initial interface clean, focused, and immediately relevant.
+3. **Progressive Disclosure ("Show More")**: Users can expand on demand to view additional matching chapters and verses across the Book of Mormon, Old Testament, New Testament, and Pearl of Great Price.
+4. **Official Gospel Library Deep Linking**: Every scripture title, reference card, and modal links directly to the official passage on `ChurchofJesusChrist.org`, highlighting the exact verse.
+5. **Scripture Wall Clock**: An ambient live visualizer that automatically updates scriptures in real-time every minute as the clock ticks.
 
 ---
 
@@ -45,7 +48,7 @@ The application solves two main correlation challenges:
 |          |                                                   |    |
 |  +-------v--------------+                          +---------v-+  |
 |  |  BOOK_PAGE_MAP       |                          | CURATED   |  |
-|  | (Print Page Indexes) |                          | VERSES    |  |
+|  | (Print Pages & Slugs)|                          | VERSES    |  |
 |  +----------------------+                          +-----------+  |
 +-------------------------------------------------------------------+
 ```
@@ -56,6 +59,7 @@ The application solves two main correlation challenges:
 - **Iconography**: Lucide React
 - **Animations & Effects**: Canvas Confetti (bookmark animations), CSS Keyframe Transitions
 - **Desktop Wrapper**: Electron 43 + Electron Builder (for packaging macOS `.app` and Windows `.exe`)
+- **Web Hosting**: Static hosting via Hostinger (`https://gunnvault.com`)
 
 ---
 
@@ -78,16 +82,17 @@ export interface VolumeInfo {
 ```
 
 ### 3.2 Book Page Index Schema (`BookMetadata`)
-Represents the page range of each book in the standard official LDS print editions (1979/2013 KJV LDS Bible; 1981/2013 Book of Mormon / Triple Combination).
+Represents the page range of each book in the standard official LDS print editions (1979/2013 KJV LDS Bible; 1981/2013 Book of Mormon / Triple Combination), alongside its official Church Gospel Library slug:
 
 ```typescript
 export interface BookMetadata {
   name: string;
   abbreviation: string;
   volumeId: VolumeId;
+  slug: string;        // URL slug for ChurchofJesusChrist.org Gospel Library
   chapters: number;
-  startPage: number; // Starting page in standard print volume
-  endPage: number;   // Ending page in standard print volume
+  startPage: number;   // Starting page in standard print volume
+  endPage: number;     // Ending page in standard print volume
 }
 ```
 
@@ -99,10 +104,11 @@ export interface ScriptureVerse {
   bookName: string;
   chapter: number;
   verse: number;
-  text: string;
+  text?: string;
   pageNumber: number;
   context?: string;
   gospelLibraryUrl?: string;
+  isCurated?: boolean;
 }
 
 export interface PageReferenceMatch {
@@ -113,6 +119,17 @@ export interface PageReferenceMatch {
   chapterRange: string;
   sampleVerse?: ScriptureVerse;
   note?: string;
+  gospelLibraryUrl?: string;
+}
+```
+
+### 3.4 Gospel Library URL Builder
+```typescript
+export function buildGospelLibraryUrl(volumeId: VolumeId, bookSlug: string, chapter: number, verse?: number): string {
+  const volPath = volumeId === 'bom' ? 'bofm' : volumeId === 'dc' ? 'dc-testament' : volumeId;
+  const bookPath = volumeId === 'dc' ? 'dc' : bookSlug;
+  const verseParam = verse ? `?lang=eng&id=p${verse}#p${verse}` : '?lang=eng';
+  return `https://www.churchofjesuschrist.org/study/scriptures/${volPath}/${bookPath}/${chapter}${verseParam}`;
 }
 ```
 
@@ -129,11 +146,17 @@ Input values undergo cleaning and candidate generation:
 ### 4.2 Page Number Resolution (`findScriptureMatches`)
 Given a target page $P$ (e.g. $P = 215$):
 1. **Index Search**: Scans `BOOK_PAGE_MAP` for books satisfying $startPage \le P \le endPage$.
-2. **Override Lookup**: Checks `EXACT_PAGE_CHAPTER_OVERRIDES` for precise historical page matches (e.g., `'bom-215' => 'Alma 14–15'`).
+2. **Override Lookup**: Checks `EXACT_PAGE_CHAPTER_OVERRIDES` for precise historical page matches (e.g., `'bom-215' => 'Alma 14–15'`, `'dc-215' => 'Section 107'`).
 3. **Interpolation Fallback**: Calculates estimated chapter range on page $P$:
    $$\text{offset} = P - \text{startPage}$$
    $$\text{estStart} = \left\lfloor \frac{\text{offset}}{\text{endPage} - \text{startPage} + 1} \times \text{chapters} \right\rfloor + 1$$
 4. **Volume-Specific Sample Filtering**: Attaches sample verses matching both `targetPage` and `volumeId`.
+
+### 4.3 Chapter & Verse Resolution & Categorization
+- Matches are split into:
+  - **Doctrine & Covenants Matches**: Displayed immediately in the default view.
+  - **Additional Volume Matches**: Filtered for progressive disclosure via the "Show More Matches" toggle.
+- Non-curated verses generate direct deep links with the official URL builder without repeating fallback quotes.
 
 ---
 
@@ -158,11 +181,11 @@ Given a target page $P$ (e.g. $P = 215$):
 ## 6. Distribution & Packaging Strategy
 
 TimeToPages supports three deployment targets:
-1. **Single-Page Web App (Vite Bundle)**: Built via `npm run build` outputting to `dist/` with relative asset base (`base: './'`).
-2. **Standalone Desktop Application**: Packaged via Electron and Electron Builder (`npm run app:dir` / `npm run app:dist`) producing:
+1. **Live Production Web App**: Deployed at [https://gunnvault.com](https://gunnvault.com) on Hostinger static hosting.
+2. **Single-Page Web App (Vite Bundle)**: Built via `npm run build` outputting to `dist/` with relative asset base (`base: './'`).
+3. **Standalone Desktop Application**: Packaged via Electron and Electron Builder (`npm run app:dir` / `npm run app:dist`) producing:
    - macOS: `release/mac-arm64/TimeToPages.app` and `TimeToPages-macOS.zip`
    - Windows: Portable `.exe` installer.
-3. **Offline Web Bundle**: Zipped `dist/` folder capable of opening `index.html` locally without internet or Node.js.
 
 ---
 
@@ -171,3 +194,4 @@ TimeToPages supports three deployment targets:
 - [ ] **Expanded Audio Integration**: Embedded audio player for listening to chapter readings directly inside the app.
 - [ ] **Cross-Reference Visualizer**: Interactive node diagram connecting Book of Mormon Isaiah passages to Old Testament chapters.
 - [ ] **Custom Study Notes**: Ability to attach personal study notes to saved scripture time bookmarks.
+

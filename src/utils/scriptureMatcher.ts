@@ -1,7 +1,8 @@
 import {
   BOOK_PAGE_MAP,
   CURATED_VERSES,
-  VOLUMES
+  VOLUMES,
+  buildGospelLibraryUrl
 } from '../data/ldsScripturesData';
 import type {
   PageReferenceMatch,
@@ -118,13 +119,12 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
         const overrideKey = `${book.volumeId}-${targetPage}`;
         let chapterRange = EXACT_PAGE_CHAPTER_OVERRIDES[overrideKey];
 
-        if (!chapterRange) {
-          // Linear interpolation for general pages
-          const pageSpan = Math.max(1, book.endPage - book.startPage + 1);
-          const pageOffset = targetPage - book.startPage;
-          const estChapterStart = Math.max(1, Math.floor((pageOffset / pageSpan) * book.chapters) + 1);
-          const estChapterEnd = Math.min(book.chapters, estChapterStart + 1);
+        const pageSpan = Math.max(1, book.endPage - book.startPage + 1);
+        const pageOffset = targetPage - book.startPage;
+        const estChapterStart = Math.max(1, Math.floor((pageOffset / pageSpan) * book.chapters) + 1);
+        const estChapterEnd = Math.min(book.chapters, estChapterStart + 1);
 
+        if (!chapterRange) {
           chapterRange =
             estChapterStart === estChapterEnd
               ? `${book.name} ${estChapterStart}`
@@ -136,6 +136,11 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
           (v) => v.volumeId === book.volumeId && (v.pageNumber === targetPage || (v.bookName === book.name && Math.abs(v.pageNumber - targetPage) <= 2))
         );
 
+        // Derive chapter number for Gospel Library link
+        const chMatch = chapterRange.match(/\b(\d+)\b/);
+        const startCh = chMatch ? parseInt(chMatch[1], 10) : estChapterStart;
+        const pageGospelLibraryUrl = buildGospelLibraryUrl(book.volumeId, book.slug, startCh);
+
         pageMatches.push({
           volumeId: book.volumeId,
           volumeName: VOLUMES[book.volumeId].name,
@@ -143,7 +148,8 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
           bookName: book.name,
           chapterRange,
           sampleVerse: sample,
-          note: `LDS Standard Print Edition, Page ${targetPage}`
+          note: `LDS Standard Print Edition, Page ${targetPage}`,
+          gospelLibraryUrl: pageGospelLibraryUrl
         });
       }
     }
@@ -151,14 +157,17 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
 
   // Match Chapter & Verses from curated verses + generated references
   for (const cv of parsed.chapterVerseCandidates) {
-    // 1. Check curated verses first
+    // 1. Check curated verses first (these have real scripture text)
     for (const verse of CURATED_VERSES) {
       if (selectedVolumeFilter !== 'all' && verse.volumeId !== selectedVolumeFilter) {
         continue;
       }
       if (verse.chapter === cv.chapter && verse.verse === cv.verse) {
         if (!verseMatches.some((v) => v.id === verse.id)) {
-          verseMatches.push(verse);
+          verseMatches.push({
+            ...verse,
+            isCurated: true
+          });
         }
       }
     }
@@ -179,6 +188,8 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
             Math.max(book.startPage, Math.round(book.startPage + ((cv.chapter - 1) / Math.max(1, book.chapters)) * pageSpan))
           );
 
+          const scriptureUrl = buildGospelLibraryUrl(book.volumeId, book.slug, cv.chapter, cv.verse);
+
           verseMatches.push({
             id,
             volumeId: book.volumeId,
@@ -186,9 +197,10 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
             chapter: cv.chapter,
             verse: cv.verse,
             pageNumber: estPage,
-            text: getGeneratedVerseText(book.name, cv.chapter, cv.verse),
+            text: '', // No repetitive placeholder!
+            isCurated: false,
             context: `${book.name} Chapter ${cv.chapter}, Verse ${cv.verse} (Estimated LDS Print Page ${estPage})`,
-            gospelLibraryUrl: `https://www.churchofjesuscrist.org/study/scriptures`
+            gospelLibraryUrl: scriptureUrl
           });
         }
       }
@@ -201,25 +213,4 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
     verseMatches,
     totalMatches: pageMatches.length + verseMatches.length
   };
-}
-
-/**
- * Returns meaningful placeholder text when detailed full text is generated for arbitrary chapter/verses
- */
-function getGeneratedVerseText(bookName: string, chapter: number, verse: number): string {
-  // Common famous text fallbacks if available
-  if (bookName === '1 Nephi' && chapter === 3 && verse === 7) {
-    return 'And it came to pass that I, Nephi, said unto my father: I will go and do the things which the Lord hath commanded...';
-  }
-  if (bookName === 'Mosiah' && chapter === 2 && verse === 17) {
-    return 'And behold, I tell you these things that ye may learn wisdom; that ye may learn that when ye are in the service of your fellow beings ye are only in the service of your God.';
-  }
-  if (bookName === 'Alma' && chapter === 37 && verse === 37) {
-    return 'Counsel with the Lord in all thy doings, and he will direct thee for good; yea, when thou liest down at night lie down unto the Lord...';
-  }
-  if (bookName === 'Moroni' && chapter === 10 && verse === 4) {
-    return 'And when ye shall receive these things, I would exhort you that ye would ask God, the Eternal Father, in the name of Christ, if these things are not true...';
-  }
-
-  return `Scripture passage in ${bookName} ${chapter}:${verse}. "Seek ye out of the best books words of wisdom; seek learning, even by study and also by faith." (D&C 88:118)`;
 }

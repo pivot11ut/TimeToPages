@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MapPin, ExternalLink, Bookmark } from 'lucide-react';
+import { X, MapPin, ExternalLink, Bookmark, BookOpen } from 'lucide-react';
 import type { PageReferenceMatch, ScriptureVerse } from '../data/ldsScripturesData';
 import { VOLUMES } from '../data/ldsScripturesData';
 
@@ -18,7 +18,7 @@ export const PassageModal: React.FC<PassageModalProps> = ({
 }) => {
   if (!item) return null;
 
-  const isVerse = 'text' in item;
+  const isVerse = 'chapter' in item && 'verse' in item;
   const verse = isVerse ? (item as ScriptureVerse) : null;
   const pageMatch = !isVerse ? (item as PageReferenceMatch) : null;
 
@@ -30,6 +30,7 @@ export const PassageModal: React.FC<PassageModalProps> = ({
     : `${pageMatch!.bookName} (${pageMatch!.chapterRange})`;
 
   const pageNum = verse ? verse.pageNumber : pageMatch!.pageNumber;
+  const scriptureUrl = verse?.gospelLibraryUrl || pageMatch?.gospelLibraryUrl || 'https://www.churchofjesuschrist.org/study/scriptures';
 
   return (
     <div style={{
@@ -84,26 +85,77 @@ export const PassageModal: React.FC<PassageModalProps> = ({
         </div>
 
         {/* Title */}
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', color: 'var(--accent-gold)', marginBottom: '1rem' }}>
-          {title}
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', marginBottom: '1rem' }}>
+          <a
+            href={scriptureUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: 'var(--accent-gold)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            title="Open in Gospel Library"
+          >
+            <span>{title}</span>
+            <ExternalLink size={18} style={{ opacity: 0.7 }} />
+          </a>
         </h2>
 
         {/* Main Content */}
         {verse ? (
           <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{
-              background: 'rgba(10, 14, 24, 0.6)',
-              padding: '1.25rem',
-              borderRadius: 'var(--radius-md)',
-              borderLeft: '4px solid var(--accent-gold)',
-              fontSize: '1.1rem',
-              lineHeight: 1.7,
-              color: '#FFF',
-              fontStyle: 'italic',
-              marginBottom: '1rem'
-            }}>
-              "{verse.text}"
-            </div>
+            {verse.isCurated && verse.text ? (
+              <div style={{
+                background: 'rgba(10, 14, 24, 0.6)',
+                padding: '1.25rem',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: '4px solid var(--accent-gold)',
+                fontSize: '1.1rem',
+                lineHeight: 1.7,
+                color: '#FFF',
+                fontStyle: 'italic',
+                marginBottom: '1rem'
+              }}>
+                "{verse.text}"
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(10, 14, 24, 0.6)',
+                padding: '1.5rem',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: '4px solid var(--accent-gold)',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ color: '#E2E8F0', fontSize: '1rem', lineHeight: 1.6, marginBottom: '1rem' }}>
+                  Passage reference: <strong>{verse.bookName} {verse.chapter}:{verse.verse}</strong> in the {volInfo.name}.
+                </p>
+                <a
+                  href={scriptureUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 1.1rem',
+                    background: 'rgba(243, 202, 104, 0.15)',
+                    border: '1px solid var(--border-gold)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--accent-gold)',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    textDecoration: 'none'
+                  }}
+                >
+                  <BookOpen size={16} />
+                  <span>Read {verse.bookName} {verse.chapter}:{verse.verse} on ChurchofJesusChrist.org</span>
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            )}
 
             {verse.context && (
               <div style={{ marginBottom: '1.5rem' }}>
@@ -156,7 +208,7 @@ export const PassageModal: React.FC<PassageModalProps> = ({
           </button>
 
           <a
-            href={verse?.gospelLibraryUrl || 'https://www.churchofjesuscrist.org/study/scriptures'}
+            href={scriptureUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{

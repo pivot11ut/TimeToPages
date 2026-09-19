@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Book, Bookmark, Check, Copy, ExternalLink, Eye, MapPin } from 'lucide-react';
+import { Book, Bookmark, BookOpen, Check, Copy, ExternalLink, Eye, MapPin } from 'lucide-react';
 import type { PageReferenceMatch, ScriptureVerse } from '../data/ldsScripturesData';
 import { VOLUMES } from '../data/ldsScripturesData';
 import confetti from 'canvas-confetti';
@@ -30,11 +30,15 @@ export const ScriptureCard: React.FC<ScriptureCardProps> = ({
 
   const pageNum = verse ? verse.pageNumber : pageMatch!.pageNumber;
 
+  const scriptureUrl = verse?.gospelLibraryUrl || pageMatch?.gospelLibraryUrl || 'https://www.churchofjesuschrist.org/study/scriptures';
+
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     const textToCopy = verse
-      ? `"${verse.text}" — ${verse.bookName} ${verse.chapter}:${verse.verse} (LDS Print Page ${verse.pageNumber})`
-      : `${pageMatch!.volumeName} Page ${pageMatch!.pageNumber} — ${pageMatch!.chapterRange}`;
+      ? verse.text
+        ? `"${verse.text}" — ${verse.bookName} ${verse.chapter}:${verse.verse} (${scriptureUrl})`
+        : `${verse.bookName} ${verse.chapter}:${verse.verse} (LDS Print Page ${verse.pageNumber}) — ${scriptureUrl}`
+      : `${pageMatch!.volumeName} Page ${pageMatch!.pageNumber} (${pageMatch!.chapterRange}) — ${scriptureUrl}`;
 
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
@@ -103,17 +107,64 @@ export const ScriptureCard: React.FC<ScriptureCardProps> = ({
           </button>
         </div>
 
-        {/* Title */}
-        <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-gold)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Book size={18} color="var(--accent-gold)" />
-          {title}
+        {/* Title - Clickable Hyperlink directly to Church Gospel Library */}
+        <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+          <a
+            href={scriptureUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: 'var(--accent-gold)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              transition: 'var(--transition-smooth)'
+            }}
+            title={`Open ${title} on ChurchofJesusChrist.org`}
+          >
+            <Book size={18} color="var(--accent-gold)" />
+            <span>{title}</span>
+            <ExternalLink size={14} style={{ opacity: 0.7 }} />
+          </a>
         </h3>
 
         {/* Main Body Text */}
         {verse ? (
-          <p style={{ fontSize: '1rem', lineHeight: 1.6, color: '#E2E8F0', fontStyle: 'italic', marginBottom: '1rem' }}>
-            "{verse.text}"
-          </p>
+          verse.isCurated && verse.text ? (
+            <p style={{ fontSize: '1rem', lineHeight: 1.6, color: '#E2E8F0', fontStyle: 'italic', marginBottom: '1rem' }}>
+              "{verse.text}"
+            </p>
+          ) : (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '0.85rem' }}>
+                Reference to <strong>{verse.bookName} {verse.chapter}:{verse.verse}</strong> in the {volInfo.name}.
+              </p>
+              <a
+                href={scriptureUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1rem',
+                  background: 'rgba(243, 202, 104, 0.12)',
+                  border: '1px solid var(--border-gold)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--accent-gold)',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                  textDecoration: 'none',
+                  transition: 'var(--transition-smooth)'
+                }}
+              >
+                <BookOpen size={16} />
+                <span>Read {verse.bookName} {verse.chapter}:{verse.verse} on Gospel Library</span>
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          )
         ) : (
           <div style={{ marginBottom: '1rem' }}>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '0.5rem' }}>
@@ -189,19 +240,27 @@ export const ScriptureCard: React.FC<ScriptureCardProps> = ({
           </button>
 
           <a
-            href={verse?.gospelLibraryUrl || 'https://www.churchofjesuscrist.org/study/scriptures'}
+            href={scriptureUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: 'var(--text-muted)',
+              color: 'var(--accent-gold)',
               display: 'inline-flex',
               alignItems: 'center',
-              padding: '0.4rem',
+              gap: '0.35rem',
+              padding: '0.4rem 0.65rem',
+              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(243, 202, 104, 0.08)',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              textDecoration: 'none',
               transition: 'var(--transition-smooth)'
             }}
             title="Open on Church Gospel Library"
           >
-            <ExternalLink size={15} />
+            <ExternalLink size={13} />
+            <span>Gospel Library</span>
           </a>
         </div>
       </div>

@@ -67,7 +67,7 @@ export const Footer: React.FC = () => {
           </div>
           <div>
             Official scriptures can be accessed online at{' '}
-            <a href="https://www.churchofjesuscrist.org/study/scriptures" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)' }}>
+            <a href="https://www.churchofjesuschrist.org/study/scriptures" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)' }}>
               ChurchofJesusChrist.org
             </a>
           </div>
