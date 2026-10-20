@@ -1,6 +1,7 @@
 import {
   BOOK_PAGE_MAP,
   CURATED_VERSES,
+  OFFICIAL_PAGES,
   VOLUMES,
   buildGospelLibraryUrl
 } from '../data/ldsScripturesData';
@@ -25,7 +26,7 @@ export interface MatchResults {
 }
 
 /**
- * Parses user input string (e.g. "215", "2:15", "02:15", "10:42", "6:29", "1829")
+ * Parses user input string (e.g. "215", "2:15", "02:15", "10:42", "6:29", "942", "9:46")
  * into numbers for page matching and chapter:verse candidates.
  */
 export function parseTimeInput(input: string): ParsedTimeInput {
@@ -53,7 +54,7 @@ export function parseTimeInput(input: string): ParsedTimeInput {
   } else {
     // Digits without colon (e.g., 215 -> 2:15 and 21:5, 1042 -> 10:42)
     if (digitsOnly.length === 3) {
-      // 215 -> 2:15
+      // 215 -> 2:15, 942 -> 9:42
       const c1 = parseInt(digitsOnly.substring(0, 1), 10);
       const v1 = parseInt(digitsOnly.substring(1), 10);
       if (c1 > 0 && v1 >= 0) chapterVerseCandidates.push({ chapter: c1, verse: v1 });
@@ -89,16 +90,6 @@ export function parseTimeInput(input: string): ParsedTimeInput {
 }
 
 /**
- * Custom override mapping for known famous LDS print pages
- */
-const EXACT_PAGE_CHAPTER_OVERRIDES: Record<string, string> = {
-  'bom-215': 'Alma 14–15',
-  'ot-215': 'Numbers 33–35',
-  'dc-215': 'Section 107',
-  'pgp-215': 'Pearl of Great Price (Section Range)',
-};
-
-/**
  * Finds matching LDS page numbers and scripture verses for given input.
  */
 export function findScriptureMatches(input: string, selectedVolumeFilter: VolumeId | 'all' = 'all'): MatchResults {
@@ -109,47 +100,44 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
   const targetPage = parsed.pageCandidates[0];
 
   if (targetPage) {
-    // Search BOOK_PAGE_MAP for matching pages across volumes
-    for (const book of BOOK_PAGE_MAP) {
-      if (selectedVolumeFilter !== 'all' && book.volumeId !== selectedVolumeFilter) {
+    const volumeOrder: VolumeId[] = ['bom', 'dc', 'ot', 'nt', 'pgp'];
+
+    for (const volId of volumeOrder) {
+      if (selectedVolumeFilter !== 'all' && volId !== selectedVolumeFilter) {
         continue;
       }
 
-      if (targetPage >= book.startPage && targetPage <= book.endPage) {
-        const overrideKey = `${book.volumeId}-${targetPage}`;
-        let chapterRange = EXACT_PAGE_CHAPTER_OVERRIDES[overrideKey];
+      const pageKey = `${volId}-${targetPage}`;
+      const official = OFFICIAL_PAGES[pageKey];
 
-        const pageSpan = Math.max(1, book.endPage - book.startPage + 1);
-        const pageOffset = targetPage - book.startPage;
-        const estChapterStart = Math.max(1, Math.floor((pageOffset / pageSpan) * book.chapters) + 1);
-        const estChapterEnd = Math.min(book.chapters, estChapterStart + 1);
-
-        if (!chapterRange) {
-          chapterRange =
-            estChapterStart === estChapterEnd
-              ? `${book.name} ${estChapterStart}`
-              : `${book.name} ${estChapterStart}–${estChapterEnd}`;
-        }
-
-        // Find curated sample verse matching BOTH volumeId AND pageNumber!
+      if (official) {
+        // Find if a curated verse exists matching this volume & page
         const sample = CURATED_VERSES.find(
-          (v) => v.volumeId === book.volumeId && (v.pageNumber === targetPage || (v.bookName === book.name && Math.abs(v.pageNumber - targetPage) <= 2))
+          (v) => v.volumeId === volId && v.pageNumber === targetPage
         );
 
-        // Derive chapter number for Gospel Library link
-        const chMatch = chapterRange.match(/\b(\d+)\b/);
-        const startCh = chMatch ? parseInt(chMatch[1], 10) : estChapterStart;
-        const pageGospelLibraryUrl = buildGospelLibraryUrl(book.volumeId, book.slug, startCh);
+        const sampleVerse: ScriptureVerse = sample || {
+          id: `${volId}-p${targetPage}`,
+          volumeId: volId,
+          bookName: official.bookName,
+          chapter: 0,
+          verse: 0,
+          text: official.verseText,
+          pageNumber: targetPage,
+          context: `${official.verseRef} (LDS Print Edition Page ${targetPage})`,
+          gospelLibraryUrl: official.url,
+          isCurated: true
+        };
 
         pageMatches.push({
-          volumeId: book.volumeId,
-          volumeName: VOLUMES[book.volumeId].name,
+          volumeId: volId,
+          volumeName: VOLUMES[volId].name,
           pageNumber: targetPage,
-          bookName: book.name,
-          chapterRange,
-          sampleVerse: sample,
-          note: `LDS Standard Print Edition, Page ${targetPage}`,
-          gospelLibraryUrl: pageGospelLibraryUrl
+          bookName: official.bookName,
+          chapterRange: official.chapterRange,
+          sampleVerse,
+          note: `Official LDS Standard Print Edition, Page ${targetPage}`,
+          gospelLibraryUrl: official.url
         });
       }
     }
@@ -178,10 +166,10 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
         continue;
       }
       if (book.chapters >= cv.chapter) {
-        const id = `${book.volumeId}-${book.name.toLowerCase().replace(/\s+/g, '-')}-${cv.chapter}-${cv.verse}`;
+        const id = `${book.volumeId}-${book.name.toLowerCase().replace(/[\s\u00a0]+/g, '-')}-${cv.chapter}-${cv.verse}`;
         // If not already in curated verses
         if (!verseMatches.some((v) => v.id === id || (v.bookName === book.name && v.chapter === cv.chapter && v.verse === cv.verse))) {
-          // Estimate page number for this chapter
+          // Estimate page number for this chapter based on official book page boundaries
           const pageSpan = Math.max(1, book.endPage - book.startPage + 1);
           const estPage = Math.min(
             book.endPage,
@@ -197,7 +185,7 @@ export function findScriptureMatches(input: string, selectedVolumeFilter: Volume
             chapter: cv.chapter,
             verse: cv.verse,
             pageNumber: estPage,
-            text: '', // No repetitive placeholder!
+            text: '',
             isCurated: false,
             context: `${book.name} Chapter ${cv.chapter}, Verse ${cv.verse} (Estimated LDS Print Page ${estPage})`,
             gospelLibraryUrl: scriptureUrl

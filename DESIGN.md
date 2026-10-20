@@ -143,14 +143,11 @@ Input values undergo cleaning and candidate generation:
 - Input `"2:15"` -> Page candidate `215`, Chapter:Verse candidate `{ chapter: 2, verse: 15 }`.
 - Input `"1042"` -> Page candidate `1042`, Chapter:Verse candidates `{ chapter: 10, verse: 42 }` and `{ chapter: 1, verse: 42 }`.
 
-### 4.2 Page Number Resolution (`findScriptureMatches`)
-Given a target page $P$ (e.g. $P = 215$):
-1. **Index Search**: Scans `BOOK_PAGE_MAP` for books satisfying $startPage \le P \le endPage$.
-2. **Override Lookup**: Checks `EXACT_PAGE_CHAPTER_OVERRIDES` for precise historical page matches (e.g., `'bom-215' => 'Alma 14–15'`, `'dc-215' => 'Section 107'`).
-3. **Interpolation Fallback**: Calculates estimated chapter range on page $P$:
-   $$\text{offset} = P - \text{startPage}$$
-   $$\text{estStart} = \left\lfloor \frac{\text{offset}}{\text{endPage} - \text{startPage} + 1} \times \text{chapters} \right\rfloor + 1$$
-4. **Volume-Specific Sample Filtering**: Attaches sample verses matching both `targetPage` and `volumeId`.
+### 4.2 Authoritative Page Number Resolution (`findScriptureMatches`)
+Given a target page $P$ (e.g. $P = 942$, $P = 946$, or $P = 215$):
+1. **Direct Official Index Lookup**: Checks `OFFICIAL_PAGES[`${volumeId}-${P}`]`, which contains the complete, authoritative page breaks and verse spans extracted directly from the Church's online scriptures via embedded `data-page` attributes (e.g., Old Testament Page 942 = Jeremiah 1; Page 946 = Jeremiah 3–4; Book of Mormon Page 215 = Alma 3–4; D&C Page 215 = D&C 106–107).
+2. **Book Boundary Index**: `BOOK_PAGE_MAP` reflects the verified physical starting and ending page numbers of all 88 books across the standard works.
+3. **Curated & First Verse Enrichment**: Attaches curated or first-verse citations and texts for that exact page number, paired with Gospel Library direct deep links.
 
 ### 4.3 Chapter & Verse Resolution & Categorization
 - Matches are split into:

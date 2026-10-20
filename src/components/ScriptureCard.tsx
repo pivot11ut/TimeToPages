@@ -26,7 +26,7 @@ export const ScriptureCard: React.FC<ScriptureCardProps> = ({
 
   const title = verse
     ? `${verse.bookName} ${verse.chapter}:${verse.verse}`
-    : `${pageMatch!.bookName} (${pageMatch!.chapterRange})`;
+    : pageMatch!.chapterRange;
 
   const pageNum = verse ? verse.pageNumber : pageMatch!.pageNumber;
 
@@ -168,14 +168,19 @@ export const ScriptureCard: React.FC<ScriptureCardProps> = ({
         ) : (
           <div style={{ marginBottom: '1rem' }}>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '0.5rem' }}>
-              Standard 1981/2013 LDS Print Edition <strong>Page {pageMatch!.pageNumber}</strong> contains chapters:
+              Standard 1981/2013 LDS Print Edition <strong>Page {pageMatch!.pageNumber}</strong> contains:
             </p>
             <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', color: '#FFF' }}>
               {pageMatch!.chapterRange}
             </div>
-            {pageMatch!.sampleVerse && (
-              <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                Sample verse on this page: "{pageMatch!.sampleVerse.text}"
+            {pageMatch!.sampleVerse?.text && (
+              <div style={{ marginTop: '0.85rem', fontSize: '0.88rem', color: '#E2E8F0', fontStyle: 'italic', lineHeight: 1.5 }}>
+                {pageMatch!.sampleVerse.context && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', fontStyle: 'normal', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    {pageMatch!.sampleVerse.context}
+                  </div>
+                )}
+                "{pageMatch!.sampleVerse.text}"
               </div>
             )}
           </div>

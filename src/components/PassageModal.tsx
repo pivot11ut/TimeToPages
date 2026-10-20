@@ -27,7 +27,7 @@ export const PassageModal: React.FC<PassageModalProps> = ({
 
   const title = verse
     ? `${verse.bookName} ${verse.chapter}:${verse.verse}`
-    : `${pageMatch!.bookName} (${pageMatch!.chapterRange})`;
+    : pageMatch!.chapterRange;
 
   const pageNum = verse ? verse.pageNumber : pageMatch!.pageNumber;
   const scriptureUrl = verse?.gospelLibraryUrl || pageMatch?.gospelLibraryUrl || 'https://www.churchofjesuschrist.org/study/scriptures';
@@ -181,6 +181,26 @@ export const PassageModal: React.FC<PassageModalProps> = ({
                 {pageMatch!.chapterRange}
               </div>
             </div>
+            {pageMatch!.sampleVerse?.text && (
+              <div style={{
+                background: 'rgba(10, 14, 24, 0.6)',
+                padding: '1.25rem',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: '4px solid var(--accent-gold)',
+                fontSize: '1.05rem',
+                lineHeight: 1.6,
+                color: '#FFF',
+                fontStyle: 'italic',
+                marginBottom: '1rem'
+              }}>
+                {pageMatch!.sampleVerse.context && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', fontStyle: 'normal', fontWeight: 600, marginBottom: '0.35rem' }}>
+                    {pageMatch!.sampleVerse.context}
+                  </div>
+                )}
+                "{pageMatch!.sampleVerse.text}"
+              </div>
+            )}
           </div>
         )}
 
